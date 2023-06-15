@@ -1,0 +1,307 @@
+//---------------------------------------------------------------------------
+
+#include <vcl.h>
+#pragma hdrstop
+
+#include "Projekt.h"
+//---------------------------------------------------------------------------
+#pragma package(smart_init)
+#pragma resource "*.dfm"
+TForm1 *Form1;
+
+#define sx 505
+#define sy 505
+#define n 21
+
+//---------------------------------------------------------------------------
+__fastcall TForm1::TForm1(TComponent* Owner): TForm(Owner)
+
+{
+
+}
+//---------------------------------------------------------------------------
+
+
+//---------------KLASA OBIEKT----------------
+class Obiekt {
+public:
+     int x0, y0, vx, vy;
+     int typ;
+
+     void ruch(void);
+     void odbicie(void);
+     TShape *ksz;
+
+     Obiekt(bool isNew);
+     virtual ~Obiekt(void);
+     virtual void przegrana(int i, int x1, int y1, int vx1, int vy1);
+};
+
+Obiekt *tw[n];
+
+
+Obiekt::Obiekt(bool isNew){
+    x0=random(sx);
+    y0=random(sy);
+
+    while( (vx=random(7)-3)==0);
+    while( (vy=random(7)-3)==0);
+    ksz=new TShape(Form1);
+    ksz->Parent=Form1;
+    if(!isNew){
+    ksz->Left=x0;
+    ksz->Top=y0;
+    }
+    ksz->Height = 25;
+    ksz->Width = 25;
+}
+
+Obiekt::~Obiekt(){
+}
+
+void Obiekt::ruch(){
+    x0+=vx;
+    y0+=vy;
+    if(x0>=(sx-25)){vx=-vx; x0=sx-25;}
+    if(x0<0){vx=-vx; x0=0;}
+    if(y0>=(sy-25)){vy=-vy; y0=sy-25;}
+    if(y0<0){vy=-vy; y0=0;}
+    ksz->Left=x0;
+    ksz->Top=y0;
+}
+
+void Obiekt::odbicie(){
+    vx=-vx;
+    vy=-vy;
+}
+
+void Obiekt::przegrana(int i, int x1, int y1, int vx1, int vy1){
+}
+
+//------------PODKLASY---------------
+class Kamien : public Obiekt {
+public:
+    Kamien();
+    Kamien(int x1, int y1, int vx1, int vy1);
+    void przegrana(int i, int x1, int y1, int vx1, int vy1);
+};
+
+class Papier : public Obiekt {
+public:
+    Papier();
+    Papier(int x1, int y1, int vx1, int vy1);
+    void przegrana(int i, int x1, int y1, int vx1, int vy1) ;
+};
+
+class Nozyce : public Obiekt {
+public:
+    Nozyce();
+    Nozyce(int x1, int y1, int vx1, int vy1);
+    void przegrana(int i, int x1, int y1, int vx1, int vy1) ;
+};
+
+
+
+
+Kamien::Kamien() : Obiekt(false) {
+      ksz->Width=25;
+      ksz->Height=25;
+      typ=0;
+      ksz->Shape=stCircle;
+      ksz->Brush->Color = clGray;
+}
+Kamien::Kamien(int x1, int y1, int vx1, int vy1) : Obiekt(true) {
+      ksz->Width=25;
+      ksz->Height=25;
+      x0=x1;
+      y0=y1;
+      ksz->Left=x0;
+      ksz->Top=y0;
+      vx=vx1;
+      vy=vy1;
+      typ=0;
+      ksz->Shape=stCircle;
+      ksz->Brush->Color = clGray;
+}
+
+void Kamien::przegrana(int i, int x1, int y1, int vx1, int vy1)
+{
+    Form1->RemoveComponent(ksz);
+    delete ksz;
+    delete this;
+    tw[i] = new Papier(x1, y1, vx1, vy1);
+}
+
+Papier::Papier(): Obiekt(false){
+    ksz->Width=25;
+    ksz->Height=25;
+    typ=1;
+    ksz->Shape=stRectangle;
+    ksz->Brush->Color = clWhite;
+}
+Papier::Papier(int x1, int y1, int vx1, int vy1): Obiekt(true){
+    ksz->Width=25;
+    ksz->Height=25;
+    x0=x1;
+    y0=y1;
+    ksz->Left=x0;
+    ksz->Top=y0;
+    vx=vx1;
+    vy=vy1;
+    typ=1;
+    ksz->Shape=stRectangle;
+    ksz->Brush->Color = clWhite;
+}
+
+void Papier::przegrana(int i, int x1, int y1, int vx1, int vy1)
+{   Form1->RemoveComponent(ksz);
+    delete ksz;
+    delete this;
+    tw[i] = new Nozyce(x1,y1, vx1,  vy1);
+}
+
+
+Nozyce::Nozyce() : Obiekt(false){
+    typ=2;
+    ksz->Shape=stEllipse;
+    ksz->Brush->Color = clSilver;
+    ksz->Height=20;
+    ksz->Width=30;
+}
+Nozyce::Nozyce(int x1, int y1, int vx1, int vy1) : Obiekt(true){
+    x0=x1;
+    y0=y1;
+    ksz->Left=x0;
+    ksz->Top=y0;
+    vx=vx1;
+    vy=vy1;
+    typ=2;
+    ksz->Shape=stEllipse;
+    ksz->Brush->Color = clSilver;
+    ksz->Height=20;
+    ksz->Width=30;
+}
+
+void Nozyce::przegrana(int i, int x1, int y1, int vx1, int vy1)
+{   Form1->RemoveComponent(ksz);
+    delete ksz;
+    delete this;
+    tw[i] = new Kamien(x1,  y1, vx1,  vy1);
+}
+
+//-------------HELPERS---------------
+void ktoWygral(Obiekt* obiekt1, Obiekt* obiekt2, int i, int j){
+
+   if((obiekt1->typ==0 && obiekt2->typ==1) || (obiekt1->typ==1 && obiekt2->typ==2) || (obiekt1->typ==2 && obiekt2->typ==0)){
+      obiekt2->odbicie();
+      obiekt1->przegrana(i, obiekt1->x0, obiekt1->y0, -(obiekt1->vx), -(obiekt1->vy));
+   }
+   else if((obiekt1->typ==1 && obiekt2->typ==0) || (obiekt1->typ==2 && obiekt2->typ==1) || (obiekt1->typ==0 && obiekt2->typ==2)){
+    obiekt1->odbicie();
+    obiekt2->przegrana(j, obiekt2->x0, obiekt2->y0, -(obiekt2->vx), -(obiekt2->vy));
+   }
+   else return;
+}
+
+bool czyZderzenie(Obiekt* obiekt1, Obiekt* obiekt2) {
+    int x1 = obiekt1->x0;
+    int y1 = obiekt1->y0;
+    int width1 = obiekt1->ksz->Width;
+    int height1 = obiekt1->ksz->Height;
+
+    int x2 = obiekt2->x0;
+    int y2 = obiekt2->y0;
+    int width2 = obiekt2->ksz->Width;
+    int height2 = obiekt2->ksz->Height;
+
+
+    if (x1 < x2 + width2 &&
+        x1 + width1 > x2 &&
+        y1 < y2 + height2 &&
+        y1 + height1 > y2) {
+        return true;
+    }
+
+    return false;
+}
+
+bool czyKoliduje() {
+    for (int i = 0; i < n; i++) {
+        if (tw[i] == NULL) {
+            continue;
+        }
+
+        for (int j = i + 1; j < n; j++) {
+            if (tw[j] == NULL) {
+                continue;
+            }
+
+            if (czyZderzenie(tw[i], tw[j])) {
+                ktoWygral(tw[i], tw[j], i, j);
+            }
+        }
+    }
+
+    return false;
+}
+
+//----------------COMPONENTS-----------------
+void __fastcall TForm1::Timer1Timer(TObject *Sender)
+{
+    int kamien=0;
+    int papier=0;
+    int nozyce=0;
+
+    for (int i = 0; i<n; i++){
+     tw[i]->ruch();
+     if(tw[i]->typ==0){
+        kamien++;
+     }
+     else if(tw[i]->typ==1){
+        papier++;
+     }
+     else if(tw[i]->typ==2){
+        nozyce++;
+     }
+    }
+
+    if(nozyce==n){
+        Label1->Caption="Nozyce wygraly!"  ;
+        Label1->Visible=true;
+        Timer1->Enabled = false;
+        }
+    else if(papier==n){
+        Label1->Caption="Papier wygral!"  ;
+        Label1->Left=70;
+        Label1->Visible=true;
+        Timer1->Enabled = false;
+        }
+    else if(kamien==n){
+        Label1->Caption="Kamien wygral!"  ;
+        Label1->Left=70;
+        Label1->Visible=true;
+        Timer1->Enabled = false;
+        }
+    liczbaKamieni->Caption=IntToStr(kamien);
+    liczbaNozyc->Caption=IntToStr(nozyce);
+    liczbaPapierow->Caption=IntToStr(papier);
+
+
+    czyKoliduje();
+}
+
+
+void __fastcall TForm1::Button_startClick(TObject *Sender)
+{
+    for (int i = 0; i<n; i++){
+     if (i%3==0){ tw[i] = new Kamien();}
+     else if (i%3==1){ tw[i] = new Papier();}
+     else { tw[i] = new Nozyce();}
+    }
+
+    Timer1->Enabled = true;
+
+    Button_start->Enabled=false;
+}
+
+
